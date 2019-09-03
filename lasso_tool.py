@@ -48,6 +48,66 @@ def generate_test_samples(omega,n,nts):
     nst.sort()
     test,ntest=generate_theta(omega,nst)
     return test,ntest
+def lasso_regression(trains,phi):
+    k=0
+    swon=[]
+    weinter=[]
+    if not np.isfortran(phi):
+        phi=np.asfortranarray(phi) 
+    kross=N/2
+    n_samples,n_poly=phi.shape
+    max_iter=1000
+    w=np.zeros(n_poly)
+    residual=trains.copy()
+    lipscu_c=(np.power(phi,2)).sum(axis=0)  
+
+    while kross>0:
+        for t in range(max_iter):
+            for i in range(n_poly):
+                lamda=k*0.005
+                old=w[i]
+                data_ground=old+phi[:,i].dot(residual)/lipscu_c[i]
+                threshold=lamda/lipscu_c[i]
+                w[i]=np.sign(data_ground) * np.maximum(np.abs(data_ground) - threshold, 0.)
+                if old!=w[i]:
+                    residual+=(old-w[i])*phi[:,i]
+        kross=N/2
+        weinter=np.resize(weinter,(k+1,len(w)))
+        weinter[k]=w
+        for i in range(len(w)):
+            if w[i]==0:
+                kross=kross-1
+        k=k+1
+    
+    return w,weinter
+def plot_weights(weights):
+    lamda=0.005*np.arange(k)
+    for o in range(N):
+        wei=weights[o]
+        plt.xlim(0,0.03)
+        plt.title('$Weights$ $vs.$ $\lambda$')
+        plt.xlabel('$\lambda$')
+        plt.ylabel('$Weights$')
+        plt.plot(lamda,wei,'-x',label="w {} ".format(o))
+        plt.legend(loc='upper right')
+        
+def plot_testingdata(ntest,ytest,tests):
+    plt.title('N=10 ; D=%d testing data'%(N-1))
+    plt.xlabel('Values of n')
+    plt.ylabel(r"$\theta(n)$")
+    plt.plot(ntest*Fs,ytest,'o',label='predicted')
+    plt.plot(ntest*Fs,tests,'-.',label='actual')
+    plt.legend(loc='upper left')
+    plt.show()
+def plot_trainingdata(ntrain,ytrain,trainsample):
+    plt.title('N=10 ; D=%d training data'%(N-1))
+    plt.xlabel('Values of n')
+    plt.ylabel(r"$\theta(n)$")
+    plt.plot(ntrain*Fs,ytrain,'o',label='predicted')
+    plt.plot(ntrain*Fs,trainsample,'-.',label='actual')
+    plt.legend(loc='upper left')
+    plt.show()
+
 omega=2*np.pi*3
 Fs=128
 Ts=1/Fs
@@ -65,69 +125,19 @@ NTR=np.reshape(ntrain,(len(ntrain),1))
 trains=np.reshape(trainsample,(len(trainsample),))
 tests=np.reshape(testsample,(len(testsample),1))
 phi=np.power(NTR,M)
-k=0
-swon=[]
-weinter=[]
-if not np.isfortran(phi):
-    phi=np.asfortranarray(phi) 
-kross=N/2
-n_samples,n_poly=phi.shape
-max_iter=1000
-w=np.zeros(n_poly)
-residual=trains.copy()
-lipscu_c=(np.power(phi,2)).sum(axis=0)  
-while kross>0:
-    for t in range(max_iter):
-        for i in range(n_poly):
-            lamda=k*0.005
-            old=w[i]
-            data_ground=old+phi[:,i].dot(residual)/lipscu_c[i]
-            threshold=lamda/lipscu_c[i]
-            w[i]=np.sign(data_ground) * np.maximum(np.abs(data_ground) - threshold, 0.)
-            if old!=w[i]:
-                residual+=(old-w[i])*phi[:,i]
-    kross=N/2
-    weinter=np.resize(weinter,(k+1,len(w)))
-    weinter[k]=w
-    for i in range(len(w)):
-        if w[i]==0:
-            kross=kross-1
-    k=k+1
-    
+w,old_w=lasso_regression(trains,phi)
+
 w_lasso=np.reshape(w,(len(w),1))
 NTST=np.reshape(ntest,(len(ntest),1))
 phitest=np.power(NTST,M)
 ytest=np.dot(phitest,w_lasso)
-weights=weinter.T
+weights=old_w.T
 
 ytrain=np.dot(phi,w)
 
-plt.title('N=10 ; D=%d training data'%(N-1))
-plt.xlabel('Values of n')
-plt.ylabel(r"$\theta(n)$")
-plt.plot(ntrain*Fs,ytrain,'o',label='predicted')
-plt.plot(ntrain*Fs,trainsample,'-.',label='actual')
-plt.legend(loc='upper left')
-plt.show()
-
-plt.title('N=10 ; D=%d testing data'%(N-1))
-plt.xlabel('Values of n')
-plt.ylabel(r"$\theta(n)$")
-plt.plot(ntest*Fs,ytest,'o',label='predicted')
-plt.plot(ntest*Fs,tests,'-.',label='actual')
-plt.legend(loc='upper left')
-
-plt.show()
-lamda=0.005*np.arange(k)
-for o in range(N):
-    wei=weights[o]
-    plt.xlim(0,0.03)
-    plt.title('$Weights$ $vs.$ $\lambda$')
-    plt.xlabel('$\lambda$')
-    plt.ylabel('$Weights$')
-    plt.plot(lamda,wei,'-x',label="w {} ".format(o))
-    plt.legend(loc='upper right')
-    
+plot_trainingdata(ntrain,ytrain,trainsample)
+plot_testingdata(ntest,ytest,tests)
+plot_weights(weights)
 
 error_d=tests-ytest
 erro_po=np.power(error_d,2)
