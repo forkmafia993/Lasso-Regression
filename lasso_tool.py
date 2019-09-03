@@ -19,7 +19,7 @@ def setlimit(i):
     else:
         plt.ylim(-10,20)
  
- def plot_theta(theta,x):
+def plot_theta(theta,x):
         plt.plot(x,theta,'-o')
         plt.show()
 
@@ -91,7 +91,7 @@ def plot_testingdata(ntest,ytest,tests):
     plt.legend(loc='upper left')
     plt.show()
 
-    def plot_trainingdata(ntrain,ytrain,trainsample):
+def plot_trainingdata(ntrain,ytrain,trainsample):
     plt.title('N=10 ; D=%d training data'%(N-1))
     plt.xlabel('Values of n')
     plt.ylabel(r"$\theta(n)$")
